@@ -5,6 +5,7 @@ clientWeb = new Paho.MQTT.Client("broker.hivemq.com", 8884, clientId);
 
 clientWeb.connect({
     useSSL: true,
+    timeout: 5,
     onSuccess: function (){
         alert("Conectado com sucesso!")
     },
@@ -15,6 +16,11 @@ clientWeb.connect({
 
 function ligarVermelho(){
     document.getElementById("vermelho").classList.add("verm");
+
+    //fazendo publish no tópico, (broker)
+    const msg = new Paho.MQTT.Message("");
+    msg.destinationName = "senai661/led/vermelho/on"
+    clientWeb.send(msg)
 }
 
 function ligarAmarelo(){
