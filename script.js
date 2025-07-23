@@ -48,5 +48,10 @@ function ligarAutomatico(){
 function desligar(){
     document.getElementById("vermelho").classList.remove("verm");
     document.getElementById("amarelo").classList.remove("amar");
-    document.getElementById("verde").classList.remove("verd");    
+    document.getElementById("verde").classList.remove("verd");  
+    
+    const msg = new Paho.MQTT.Message("");
+    msg.destinationName = "senai661/led/vermelho/off";
+    msg.destinationName = "senai661/led/amarelo/off";
+    msg.destinationName = "senai661/led/verde/off";    
 }
