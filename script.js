@@ -25,10 +25,20 @@ function ligarVermelho(){
 
 function ligarAmarelo(){
     document.getElementById("amarelo").classList.add("amar");
+
+    //fazendo publish no tópico, (broker)
+    const msg = new Paho.MQTT.Message("");
+    msg.destinationName = "senai661/led/amarelo/on"
+    clientWeb.send(msg)
 }
 
 function ligarVerde(){
     document.getElementById("verde").classList.add("verd");
+
+    //fazendo publish no tópico, (broker)
+    const msg = new Paho.MQTT.Message("");
+    msg.destinationName = "senai661/led/verde/on"
+    clientWeb.send(msg)
 }
 
 function ligarAutomatico(){
@@ -39,4 +49,5 @@ function desligar(){
     document.getElementById("vermelho").classList.remove("verm");
     document.getElementById("amarelo").classList.remove("amar");
     document.getElementById("verde").classList.remove("verd");
+    
 }
