@@ -1,6 +1,6 @@
 let clientWeb = null;
 
-const clientId = "Esp32" + Math.floor(Math.random() * 900) + 100;
+const clientId = "ESP8266" + Math.floor(Math.random() * 900) + 100;
 clientWeb = new Paho.MQTT.Client("broker.hivemq.com", 8884, clientId);
 
 clientWeb.connect({
@@ -28,7 +28,7 @@ function ligarAmarelo(){
 
     //fazendo publish no tópico, (broker)
     const msgAmar = new Paho.MQTT.Message("");
-    msgAmar.destinationName = "senai661/led/amarelo/on"
+    msgAmar.destinationName = "jmr/led/amarelo/on"
     clientWeb.send(msgAmar)
 }
 
@@ -39,10 +39,6 @@ function ligarVerde(){
     const msgVerd = new Paho.MQTT.Message("");
     msgVerd.destinationName = "senai661/led/verde/on"
     clientWeb.send(msgVerd)
-}
-
-function ligarAutomatico(){
-    alert("Ligando o botão automático!");
 }
 
 function desligar(){
@@ -57,4 +53,8 @@ function desligar(){
     clientWeb.send(msg);
     msg.destinationName = "senai661/led/verde/off";
     clientWeb.send(msg);     
+}
+
+function ligarAutomatico(){
+    
 }

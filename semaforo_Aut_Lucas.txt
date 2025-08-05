@@ -1,0 +1,233 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+
+//Configuraçãod a Rede Wifi
+//const char *SSID ="AAPM-510";
+//const char *PASSWORD ="aapmSenai#";
+
+const char *SSID ="Galaxy Godoi";
+const char *PASSWORD ="vxrb2437";
+
+//const char *SSID ="POCOX7";
+//const char *PASSWORD ="12345678";
+
+bool modoAutomatico = false;
+unsigned long ultimoTempoTroca = 0;
+int estadoSemaforo = 0;
+
+
+
+//Configuração do MQTT
+const char *MQTT_HOST ="broker.hivemq.com";
+//const char *MQTT_HOST ="broker.emqx.io";
+const int MQTT_PORT = 1883;
+const char *MQTT_SUB_LIGA_LED = "senai801/Led/Liga";
+//const char *MQTT_SUB_DESLIGA_LED = "senai801/Led/Desliga";
+
+// Criando as instâncias (objetos)
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+//Tempo de atualização
+const int tempo = 1000;
+
+//Definir pino Digial
+const int ledvrm = 21;
+const int ledam = 22;
+const int ledvd = 23;
+
+void setup() {
+ 
+pinMode(ledvrm,OUTPUT);
+pinMode(ledam,OUTPUT);
+ pinMode(ledvd,OUTPUT);
+ Serial.begin(115200);
+ Serial.println("Iniciado");
+ conectarwifi();
+ conectaMQTT();
+
+
+}
+
+void loop() {
+
+  if(!client.connected()){
+      Serial.println("MQTT Desconectado!");
+      conectaMQTT();
+
+  }
+  
+  client.loop();
+  //delay(tempo);
+   // Modo automático de semáforo
+  if (modoAutomatico) {
+    unsigned long agora = millis();
+    switch (estadoSemaforo) {
+      case 0: // Vermelho
+        digitalWrite(ledvrm, 1);
+        digitalWrite(ledam, 0);
+        digitalWrite(ledvd, 0);
+        if (agora - ultimoTempoTroca >= 3000) {
+          estadoSemaforo = 1;
+          ultimoTempoTroca = agora;
+        }
+        break;
+
+      case 1: // Amarelo
+        digitalWrite(ledvrm, 0);
+        digitalWrite(ledam, 1);
+        digitalWrite(ledvd, 0);
+        if (agora - ultimoTempoTroca >= 1000) {
+          estadoSemaforo = 2;
+          ultimoTempoTroca = agora;
+        }
+        break;
+
+      case 2: // Verde
+        digitalWrite(ledvrm, 0);
+        digitalWrite(ledam, 0);
+        digitalWrite(ledvd, 1);
+        if (agora - ultimoTempoTroca >= 3000) {
+          estadoSemaforo = 0;
+          ultimoTempoTroca = agora;
+        }
+        break;
+    }
+  }
+
+  delay(100);  // reduzido para mais responsividade
+
+
+}
+
+void verify_mqtt_connection(void)
+{
+    conectaMQTT();  
+}
+// Realiza a conexão com a rede Wifi
+void conectarwifi(){
+
+ if (WiFi.status() == WL_CONNECTED)
+        return; 
+
+ WiFi.begin(SSID,PASSWORD);
+ Serial.println("Conectando no Wifi");
+
+ while(WiFi.status() != WL_CONNECTED)
+ {
+  delay(100);
+  Serial.print(".");
+ }
+
+ String ip = "" + WiFi.localIP().toString();
+ Serial.println("");
+ Serial.println("Conectado Wifi");
+ Serial.println(ip.c_str());
+   
+}
+
+//Realiza a conexão com o broker MQTT
+void conectaMQTT(){
+
+// Define o servidor MQTT que será conectado  
+client.setServer(MQTT_HOST, MQTT_PORT);
+
+// Define a função que será chamada quando receber uma mensagem
+client.setCallback(mensagemRecebida);
+
+
+while (!client.connected()) 
+    {
+        Serial.print("Tentando se conectar ao broker MQTT: ");
+        Serial.println(MQTT_HOST);
+
+        String clientId = "Esp32";
+        clientId += String(random(0xffff), HEX);// gera um número randomico para criar uma identificação unica no broker de forma que não tenha dois dispositivos com o mesmo nome, o que impactaria em uma possível falha na conexão
+
+              
+        if (client.connect(clientId.c_str())) 
+        {
+            Serial.println("Conectado ao broker MQTT com sucesso!");
+            Serial.println(clientId);
+        } 
+        else 
+        {
+            Serial.println("Falha na tentativa de conexao com broker MQTT.");
+            String mqtterror = "Codigo do erro:" + String(client.state());
+            Serial.println(mqtterror.c_str());
+            Serial.println("Nova tentativa em 2s...");
+            delay(2000);
+        }
+
+     
+    }
+
+  //se escreve no topico desejado
+  client.subscribe(MQTT_SUB_LIGA_LED); 
+  //client.subscribe(MQTT_SUB_DESLIGA_LED); 
+
+}
+
+
+void mensagemRecebida(char *topico, byte *payload ,unsigned int tamanho)
+{
+
+  Serial.println("Mensagem Recebida");
+  Serial.println(topico);
+  //Serial.println(payload);
+  Serial.print("Mensagem: ");
+  String messageTemp;
+  
+  for (int i = 0; i < tamanho; i++) {
+    Serial.print((char)payload[i]);
+    messageTemp += (char)payload[i];
+  }
+
+  
+ messageTemp.trim();  // remove espaços, \n, \r etc.
+
+ if (messageTemp == "AUT") {
+    modoAutomatico = true;
+    estadoSemaforo = 0;
+    ultimoTempoTroca = millis();
+    Serial.println("Modo automático ativado.");
+    return;
+  }
+
+  // Se for qualquer outra mensagem, desativa o modo automático
+  modoAutomatico = false;
+
+
+  if(messageTemp == "V1"){
+    digitalWrite(ledvrm,1);
+    digitalWrite(ledam,0);
+    digitalWrite(ledvd,0);
+    Serial.println("Liga led vermelho");
+  }
+
+   
+  if(messageTemp == "A1"){
+    digitalWrite(ledvrm,0);
+    digitalWrite(ledam,1);
+    digitalWrite(ledvd,0);
+    Serial.println("Liga led amarelo");
+  }
+
+ 
+
+   if(messageTemp == "Vd1"){
+   digitalWrite(ledvrm,0);
+    digitalWrite(ledam,0);
+    digitalWrite(ledvd,1);
+    Serial.println("Liga led verde");
+  }
+
+    if(messageTemp == "DEL"){
+   digitalWrite(ledvrm,0);
+    digitalWrite(ledam,0);
+    digitalWrite(ledvd,0);
+    Serial.println("Todos os LEDs desligados!!");
+  }
+
+}
