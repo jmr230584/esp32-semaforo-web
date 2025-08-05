@@ -49,7 +49,7 @@ function desligar(){
     let msg = new Paho.MQTT.Message("");
     msg.destinationName = "senai661/led/vermelho/off";
     clientWeb.send(msg);
-    msg.destinationName = "senai661/led/amarelo/off";
+    msg.destinationName = "jmr/led/amarelo/off";
     clientWeb.send(msg);
     msg.destinationName = "senai661/led/verde/off";
     clientWeb.send(msg);     
